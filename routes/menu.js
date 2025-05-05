@@ -7,7 +7,7 @@ const db = require('../db');
  */
 router.get('/', (req, res) => {
   const query = `
-    SELECT id, name, alias, link, menutype, parent, ordering, published,type
+    SELECT id, name, alias, link, menutype, parent, ordering, published
     FROM job_menus
     ORDER BY parent ASC, ordering ASC`;
 

@@ -18,28 +18,29 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: 'http://localhost:3000'
+        url: 'http://localhost:3000/api' // đường dẫn gốc
       }
     ]
   },
-  apis: ['./index.js'],
+  apis: ['./routes/*.js'], // 👈 đọc toàn bộ file trong thư mục routes/
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 // Import router
 const menuRouter = require('./routes/menu');
 const usersRouter = require('./routes/users');
 const contentsRouter = require('./routes/contents');
 const newsRouter = require('./routes/news');
-// ... import các router khác
+const categoriesRouter = require('./routes/categories');
 
-// Sử dụng router
-app.use('/menu', menuRouter);
-app.use('/users', usersRouter);
-app.use('/contents', contentsRouter);
-app.use('/news', newsRouter);
-// ... các router khác
+// Sử dụng router với prefix /api
+app.use('/api/menu', menuRouter);
+app.use('/api/users', usersRouter);
+app.use('/api/contents', contentsRouter);
+app.use('/api/news', newsRouter);
+app.use('/api/categories', categoriesRouter);
 
 const PORT = 3000;
 app.listen(PORT, () => {

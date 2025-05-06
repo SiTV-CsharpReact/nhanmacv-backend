@@ -42,7 +42,7 @@ app.use('/api/contents', contentsRouter);
 app.use('/api/news', newsRouter);
 app.use('/api/categories', categoriesRouter);
 
-const PORT = 3000;
+const PORT = 3600;
 app.listen(PORT, () => {
   console.log(`🚀 Server chạy tại http://localhost:${PORT}`);
   console.log(`📘 Swagger docs tại http://localhost:${PORT}/api-docs`);

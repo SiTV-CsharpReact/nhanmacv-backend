@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const md5 = require('md5');
 const db = require('../db');
+const { success, error } = require('../utils/utils');
 
 /**
  * @swagger
@@ -40,7 +41,7 @@ router.post('/register', (req, res) => {
   const { name, username, email, password } = req.body;
 
   if (!name || !username || !email || !password) {
-    return res.status(400).json({ message: 'Vui lòng nhập đầy đủ thông tin' });
+    return error(res, 'Vui lòng nhập đầy đủ thông tin', 400);
   }
 
   const hashedPassword = md5(password);
@@ -50,10 +51,10 @@ router.post('/register', (req, res) => {
     'SELECT id FROM jos_users WHERE username = ? OR email = ?',
     [username, email],
     (err, users) => {
-      if (err) return res.status(500).json({ error: err.message });
+      if (err) return error(res, err.message);
 
       if (users.length > 0) {
-        return res.status(400).json({ message: 'Tài khoản hoặc email đã tồn tại' });
+        return error(res, 'Tài khoản hoặc email đã tồn tại', 400);
       }
 
       const newUser = {
@@ -70,8 +71,8 @@ router.post('/register', (req, res) => {
       };
 
       db.query('INSERT INTO jos_users SET ?', newUser, (err, result) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.status(201).json({ message: 'Tạo tài khoản thành công', userId: result.insertId });
+        if (err) return error(res, err.message);
+        success(res, 'Tạo tài khoản thành công', { userId: result.insertId }, 201);
       });
     }
   );
@@ -108,7 +109,7 @@ router.post('/login', (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
-    return res.status(400).json({ message: 'Vui lòng nhập username và password' });
+    return error(res, 'Vui lòng nhập username và password', 400);
   }
 
   const hashedPassword = md5(password);
@@ -121,16 +122,13 @@ router.post('/login', (req, res) => {
   `;
 
   db.query(query, [username, hashedPassword], (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
+    if (err) return error(res, err.message);
 
     if (results.length === 0) {
-      return res.status(401).json({ message: 'Sai tên đăng nhập hoặc mật khẩu' });
+      return error(res, 'Sai tên đăng nhập hoặc mật khẩu', 401);
     }
 
-    res.status(200).json({
-      message: 'Đăng nhập thành công',
-      user: results[0]
-    });
+    success(res, 'Đăng nhập thành công', { user: results[0] });
   });
 });
 

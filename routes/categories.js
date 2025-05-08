@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { success, error,getCurrentDateTime } = require('../utils/utils'); // 👈 import hàm tái sử dụng
+const { success, error, getCurrentDateTime } = require('../utils/utils');
 
 // GET all categories
 router.get('/', (req, res) => {
@@ -23,7 +23,7 @@ router.post('/', (req, res) => {
     [title, alias, parent_id, published, description, checked_out_time, params],
     (err, result) => {
       if (err) return error(res, err.message);
-      success(res, "Thêm chuyên mục thành công", { id: result.insertId, ...req.body });
+      success(res, "Thêm chuyên mục thành công", { id: result.insertId, ...req.body }, 201);
     }
   );
 });

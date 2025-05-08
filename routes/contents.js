@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const moment = require('moment');
+const { success, error } = require('../utils/utils');
 /**
  * @swagger
- * /content:
+ * /contents:
  *   get:
  *     summary: Lấy danh sách bài viết (bảng jos_content)
  *     parameters:
@@ -125,25 +126,19 @@ router.get('/', async (req, res) => {
     const total = await getTotalCount(db, filters);
 
     // Trả về response
-    res.json({
-      data: [results],
-      // pagination: {
-      //   page,
-      //   pageSize,
-      //   total,
-      //   totalPages: Math.ceil(total / pageSize)
-      // }
+    success(res, "Lấy danh sách bài viết thành công", {
+      data: results,
+      // pagination: { page, pageSize, total, totalPages }
     });
   console.log(res)
   } catch (err) {
-    console.error('Error fetching content:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    error(res, 'Internal server error');
   }
 });
 
 /**
  * @swagger
- * /content:
+ * /contents:
  *   post:
  *     summary: Thêm bài viết mới vào bảng jos_content
  *     tags: [Content]
@@ -187,45 +182,52 @@ router.get('/', async (req, res) => {
  *       500:
  *         description: Lỗi server
  */
+
+function toMySQLDateTime(dateString) {
+  if (!dateString) return null;
+  return moment(dateString).format('YYYY-MM-DD HH:mm:ss');
+}
+
 router.post('/', async (req, res) => {
   try {
     const {
+      title, alias, title_alias, introtext,
       fulltext, state, sectionid, mask, catid, created, created_by, created_by_alias,
       modified, modified_by, checked_out, checked_out_time, publish_up, publish_down,
       images, urls, attribs, version, parentid, ordering, metakey, metadesc, access, hits, metadata
     } = req.body;
 
-    // Validate cơ bản (bạn có thể bổ sung thêm)
-    if (!catid || !state || !created) {
-      return res.status(400).json({ error: 'Thiếu thông tin bắt buộc (catid, state, created)' });
+    if (catid === undefined || state === undefined || !created || !title || !alias || !title_alias || !introtext) {
+      return res.status(400).json({ error: 'Thiếu thông tin bắt buộc (title, alias, title_alias, introtext, catid, state, created)' });
     }
 
     const sql = `
       INSERT INTO jos_content (
-        fulltext, state, sectionid, mask, catid, created, created_by, created_by_alias,
+        title, alias, title_alias, introtext, \`fulltext\`, state, sectionid, mask, catid, created, created_by, created_by_alias,
         modified, modified_by, checked_out, checked_out_time, publish_up, publish_down,
         images, urls, attribs, version, parentid, ordering, metakey, metadesc, access, hits, metadata
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
+    const now = moment().format('YYYY-MM-DD HH:mm:ss');
     const params = [
-      fulltext || '', state, sectionid || 0, mask || 0, catid, created, created_by || 0, created_by_alias || '',
-      modified || null, modified_by || 0, checked_out || 0, checked_out_time || null, publish_up || null, publish_down || null,
+      title || '', alias || '', title_alias || '', introtext || '',
+      fulltext || '', state, sectionid || 0, mask || 0, catid, toMySQLDateTime(created), created_by || 0, created_by_alias || '',
+      toMySQLDateTime(modified) || now, modified_by || 0, checked_out || 0, toMySQLDateTime(checked_out_time) || now, toMySQLDateTime(publish_up) || now, toMySQLDateTime(publish_down) || now,
       images || '', urls || '', attribs || '', version || 1, parentid || 0, ordering || 0, metakey || '', metadesc || '', access || 0, hits || 0, metadata || ''
     ];
 
     const [result] = await db.promise().query(sql, params);
 
-    res.json({ success: true, id: result.insertId });
+    success(res, "Thêm bài viết thành công", { id: result.insertId }, 201);
   } catch (err) {
-    console.error('Error adding content:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    error(res, 'Internal server error');
   }
 });
 
 /**
  * @swagger
- * /content/{id}:
+ * /contentss/{id}:
  *   get:
  *     summary: Lấy chi tiết bài viết theo ID
  *     parameters:
@@ -256,19 +258,18 @@ router.get('/:id', async (req, res) => {
     );
 
     if (results.length === 0) {
-      return res.status(404).json({ error: 'Bài viết không tồn tại' });
+      return error(res, 'Bài viết không tồn tại', 404);
     }
 
-    res.json(results[0]);
+    success(res, "Lấy chi tiết bài viết thành công", results[0]);
   } catch (err) {
-    console.error('Error fetching content by ID:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    error(res, 'Internal server error');
   }
 });
 
 /**
  * @swagger
- * /content/alias/{alias}:
+ * /contents/alias/{alias}:
  *   get:
  *     summary: Lấy bài viết theo alias
  *     parameters:
@@ -299,13 +300,12 @@ router.get('/alias/:alias', async (req, res) => {
     );
 
     if (results.length === 0) {
-      return res.status(404).json({ error: 'Bài viết không tồn tại' });
+      return error(res, 'Bài viết không tồn tại', 404);
     }
 
-    res.json(results[0]);
+    success(res, "Lấy bài viết theo alias thành công", results[0]);
   } catch (err) {
-    console.error('Error fetching content by alias:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    error(res, 'Internal server error');
   }
 });
 

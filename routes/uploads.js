@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { success, error } = require('../utils/utils');
 
 // Cấu hình multer để lưu file
 const storage = multer.diskStorage({
@@ -88,20 +89,13 @@ const upload = multer({
 router.post('/image', upload.single('image'), (req, res) => {
     try {
         if (!req.file) {
-            return res.status(400).json({ error: 'Không tìm thấy file ảnh' });
+            return error(res, 'Không tìm thấy file ảnh', 400);
         }
-        
         // Trả về đường dẫn ảnh
         const imageUrl = `/uploads/${req.file.filename}`;
-        res.json({ 
-            success: true,
-            imageUrl: imageUrl
-        });
-    } catch (error) {
-        res.status(500).json({ 
-            success: false,
-            error: error.message 
-        });
+        success(res, 'Upload ảnh thành công', { imageUrl });
+    } catch (err) {
+        error(res, err.message);
     }
 });
 
@@ -144,27 +138,15 @@ router.post('/image', upload.single('image'), (req, res) => {
 router.get('/images', (req, res) => {
     try {
         const uploadsDir = path.join(__dirname, '..', 'uploads');
-        
-        // Đọc danh sách file trong thư mục uploads
         fs.readdir(uploadsDir, (err, files) => {
-            if (err) {
-                return res.status(500).json({
-                    success: false,
-                    error: 'Không thể đọc thư mục uploads'
-                });
-            }
-
-            // Lọc chỉ lấy file ảnh
+            if (err) return error(res, 'Không thể đọc thư mục uploads');
             const imageFiles = files.filter(file => {
                 const ext = path.extname(file).toLowerCase();
                 return ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext);
             });
-
-            // Lấy thông tin chi tiết của từng file
             const images = imageFiles.map(filename => {
                 const filePath = path.join(uploadsDir, filename);
                 const stats = fs.statSync(filePath);
-                
                 return {
                     filename: filename,
                     url: `/uploads/${filename}`,
@@ -172,17 +154,10 @@ router.get('/images', (req, res) => {
                     uploadDate: stats.mtime
                 };
             });
-
-            res.json({
-                success: true,
-                images: images
-            });
+            success(res, 'Lấy danh sách ảnh thành công', images);
         });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
+    } catch (err) {
+        error(res, err.message);
     }
 });
 

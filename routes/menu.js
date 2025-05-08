@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { success, error } = require('../utils/utils');
 
 /**
  * Lấy danh sách menu
@@ -12,8 +13,8 @@ router.get('/', (req, res) => {
     ORDER BY parent ASC, ordering ASC`;
 
   db.query(query, (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(results);
+    if (err) return error(res, 'Lỗi server khi lấy menu');
+    success(res, 'Lấy danh sách menu thành công', results);
   });
 });
 
@@ -31,7 +32,7 @@ router.post('/add', (req, res) => {
     ordering === undefined ||
     published === undefined
   ) {
-    return res.status(400).json({ message: 'Thiếu dữ liệu bắt buộc' });
+    return error(res, 'Thiếu dữ liệu bắt buộc', 400);
   }
 
   const sql = `
@@ -44,9 +45,9 @@ router.post('/add', (req, res) => {
     (err, result) => {
       if (err) {
         console.error('Lỗi thêm menu:', err);
-        return res.status(500).json({ message: 'Lỗi server khi thêm menu' });
+        return error(res, 'Lỗi server khi thêm menu');
       }
-      res.status(201).json({ message: 'Thêm menu thành công', menuId: result.insertId });
+      success(res, 'Thêm menu thành công', { menuId: result.insertId }, 201);
     }
   );
 });
@@ -66,7 +67,7 @@ router.put('/edit/:id', (req, res) => {
     ordering === undefined ||
     published === undefined
   ) {
-    return res.status(400).json({ message: 'Thiếu dữ liệu bắt buộc' });
+    return error(res, 'Thiếu dữ liệu bắt buộc', 400);
   }
 
   const sql = `
@@ -80,12 +81,12 @@ router.put('/edit/:id', (req, res) => {
     (err, result) => {
       if (err) {
         console.error('Lỗi sửa menu:', err);
-        return res.status(500).json({ message: 'Lỗi server khi sửa menu' });
+        return error(res, 'Lỗi server khi sửa menu');
       }
       if (result.affectedRows === 0) {
-        return res.status(404).json({ message: 'Không tìm thấy menu để sửa' });
+        return error(res, 'Không tìm thấy menu để sửa', 404);
       }
-      res.status(200).json({ message: 'Sửa menu thành công' });
+      success(res, 'Sửa menu thành công');
     }
   );
 });
@@ -100,12 +101,12 @@ router.delete('/delete/:id', (req, res) => {
   db.query(sql, [id], (err, result) => {
     if (err) {
       console.error('Lỗi xóa menu:', err);
-      return res.status(500).json({ message: 'Lỗi server khi xóa menu' });
+      return error(res, 'Lỗi server khi xóa menu');
     }
     if (result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Không tìm thấy menu để xóa' });
+      return error(res, 'Không tìm thấy menu để xóa', 404);
     }
-    res.status(200).json({ message: 'Xóa menu thành công' });
+    success(res, 'Xóa menu thành công');
   });
 });
 

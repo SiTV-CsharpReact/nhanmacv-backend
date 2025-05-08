@@ -132,8 +132,87 @@ router.get('/', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /content:
+ *   post:
+ *     summary: Thêm bài viết mới vào bảng jos_content
+ *     tags: [Content]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fulltext: { type: string }
+ *               state: { type: integer }
+ *               sectionid: { type: integer }
+ *               mask: { type: integer }
+ *               catid: { type: integer }
+ *               created: { type: string, format: date-time }
+ *               created_by: { type: integer }
+ *               created_by_alias: { type: string }
+ *               modified: { type: string, format: date-time }
+ *               modified_by: { type: integer }
+ *               checked_out: { type: integer }
+ *               checked_out_time: { type: string, format: date-time }
+ *               publish_up: { type: string, format: date-time }
+ *               publish_down: { type: string, format: date-time }
+ *               images: { type: string }
+ *               urls: { type: string }
+ *               attribs: { type: string }
+ *               version: { type: integer }
+ *               parentid: { type: integer }
+ *               ordering: { type: integer }
+ *               metakey: { type: string }
+ *               metadesc: { type: string }
+ *               access: { type: integer }
+ *               hits: { type: integer }
+ *               metadata: { type: string }
+ *     responses:
+ *       200:
+ *         description: Thêm bài viết thành công
+ *       400:
+ *         description: Dữ liệu không hợp lệ
+ *       500:
+ *         description: Lỗi server
+ */
+router.post('/', async (req, res) => {
+  try {
+    const {
+      fulltext, state, sectionid, mask, catid, created, created_by, created_by_alias,
+      modified, modified_by, checked_out, checked_out_time, publish_up, publish_down,
+      images, urls, attribs, version, parentid, ordering, metakey, metadesc, access, hits, metadata
+    } = req.body;
 
+    // Validate cơ bản (bạn có thể bổ sung thêm)
+    if (!catid || !state || !created) {
+      return res.status(400).json({ error: 'Thiếu thông tin bắt buộc (catid, state, created)' });
+    }
 
+    const sql = `
+      INSERT INTO jos_content (
+        fulltext, state, sectionid, mask, catid, created, created_by, created_by_alias,
+        modified, modified_by, checked_out, checked_out_time, publish_up, publish_down,
+        images, urls, attribs, version, parentid, ordering, metakey, metadesc, access, hits, metadata
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const params = [
+      fulltext || '', state, sectionid || 0, mask || 0, catid, created, created_by || 0, created_by_alias || '',
+      modified || null, modified_by || 0, checked_out || 0, checked_out_time || null, publish_up || null, publish_down || null,
+      images || '', urls || '', attribs || '', version || 1, parentid || 0, ordering || 0, metakey || '', metadesc || '', access || 0, hits || 0, metadata || ''
+    ];
+
+    const [result] = await db.promise().query(sql, params);
+
+    res.json({ success: true, id: result.insertId });
+  } catch (err) {
+    console.error('Error adding content:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 /**
  * @swagger

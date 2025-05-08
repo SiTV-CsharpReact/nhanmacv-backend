@@ -36,7 +36,7 @@ const upload = multer({
 
 /**
  * @swagger
- * /api/upload/image:
+ * /upload/image:
  *   post:
  *     summary: Upload một file ảnh
  *     description: Upload ảnh và trả về đường dẫn của ảnh
@@ -86,13 +86,14 @@ const upload = multer({
  *                   type: string
  *                   example: Lỗi khi xử lý file
  */
-router.post('/image', upload.single('image'), (req, res) => {
+router.post('/image', upload.single('file'), (req, res) => {
+    console.log(req);
     try {
         if (!req.file) {
             return error(res, 'Không tìm thấy file ảnh', 400);
         }
         // Trả về đường dẫn ảnh
-        const imageUrl = `/uploads/${req.file.filename}`;
+        const imageUrl = `http://localhost:3600/uploads/${req.file.filename}`;
         success(res, 'Upload ảnh thành công', { imageUrl });
     } catch (err) {
         error(res, err.message);
@@ -101,7 +102,7 @@ router.post('/image', upload.single('image'), (req, res) => {
 
 /**
  * @swagger
- * /api/upload/images:
+ * /images:
  *   get:
  *     summary: Lấy danh sách ảnh đã upload
  *     description: Trả về danh sách các ảnh đã được upload vào thư mục uploads

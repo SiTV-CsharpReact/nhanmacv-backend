@@ -55,7 +55,7 @@ const usersRouter = require('./routes/users');
 const contentsRouter = require('./routes/contents');
 const newsRouter = require('./routes/news');
 const categoriesRouter = require('./routes/categories');
-const uploadsRouter = require('./routes/uploads');
+const uploadsRouter = require('./routes/upload');
 
 // Sử dụng router với prefix /api
 app.use('/api/menu', menuRouter);

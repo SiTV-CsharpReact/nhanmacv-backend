@@ -176,6 +176,7 @@ router.get("/", async (req, res) => {
  *               access: { type: integer }
  *               hits: { type: integer }
  *               metadata: { type: string }
+ *               image_desc: { type: string }
  *     responses:
  *       200:
  *         description: Thêm bài viết thành công
@@ -222,6 +223,7 @@ router.post("/", async (req, res) => {
       access,
       hits,
       metadata,
+      image_desc
     } = req.body;
 
     if (
@@ -252,8 +254,8 @@ router.post("/", async (req, res) => {
       INSERT INTO jos_content (
         title, alias, title_alias, introtext, \`fulltext\`, state, sectionid, mask, catid, created, created_by, created_by_alias,
         modified, modified_by, checked_out, checked_out_time, publish_up, publish_down,
-        images, urls, attribs, version, parentid, ordering, metakey, metadesc, access, hits, metadata
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        images, urls, attribs, version, parentid, ordering, metakey, metadesc, access, hits, metadata,image_desc
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const now = moment().format("YYYY-MM-DD HH:mm:ss");
@@ -287,11 +289,12 @@ router.post("/", async (req, res) => {
       access || 0,
       hits || 0,
       metadata || "",
+      image_desc|| ""
     ];
 
     const [result] = await db.promise().query(sql, params);
     console.log(result);
-    success(res, "Thêm bài viết thành công", { id: result.insertId }, 201);
+    success(res, "Thêm bài viết thành công", { id: result.insertId }, 200);
   } catch (err) {
     error(res, "Internal server error");
   }
@@ -328,7 +331,7 @@ router.get("/:id", async (req, res) => {
       `SELECT id,title, alias, title_alias, introtext, state, sectionid, catid,
                 created, created_by, modified, modified_by, checked_out, checked_out_time,
                 publish_up, publish_down, images, urls, attribs, version, parentid,
-                ordering, metakey, metadesc, access, hits, metadata
+                ordering, metakey, metadesc, access, hits, metadata,image_desc
          FROM jos_content WHERE id = ?`,
       [contentId]
     );
@@ -428,6 +431,7 @@ router.put("/:id", async (req, res) => {
       access,
       hits,
       metadata,
+      image_desc,
     } = req.body;
 
     // Kiểm tra bắt buộc (ví dụ: title, alias, catid, state)
@@ -452,7 +456,7 @@ router.put("/:id", async (req, res) => {
     title = ?, alias = ?, title_alias = ?, introtext = ?, \`fulltext\` = ?, state = ?, sectionid = ?, mask = ?, catid = ?,
     created = ?, created_by = ?, created_by_alias = ?, modified = ?, modified_by = ?, checked_out = ?, checked_out_time = ?,
     publish_up = ?, publish_down = ?, images = ?, urls = ?, attribs = ?, version = ?, parentid = ?, ordering = ?,
-    metakey = ?, metadesc = ?, access = ?, hits = ?, metadata = ?
+    metakey = ?, metadesc = ?, access = ?, hits = ?, metadata = ?, image_desc = ?
   WHERE id = ?
 `;
 
@@ -487,11 +491,12 @@ router.put("/:id", async (req, res) => {
       access || 0,
       hits || 0,
       metadata || "",
-      contentId,
+      image_desc|| "",
+      contentId
     ];
 
     const [result] = await db.promise().query(sql, params);
-
+    console.log(result)
     if (result.affectedRows === 0) {
       return error(res, "Bài viết không tồn tại", 404);
     }

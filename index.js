@@ -56,6 +56,7 @@ const contentsRouter = require('./routes/contents');
 const newsRouter = require('./routes/news');
 const categoriesRouter = require('./routes/categories');
 const uploadsRouter = require('./routes/upload');
+const slidesRouter = require('./routes/slides');
 
 // Sử dụng router với prefix /api
 app.use('/api/menu', menuRouter);
@@ -64,6 +65,7 @@ app.use('/api/contents', contentsRouter);
 app.use('/api/news', newsRouter);
 app.use('/api/categories', categoriesRouter);
 app.use('/api/upload', uploadsRouter);
+app.use('/api/slides', slidesRouter);
 
 const PORT = 3600;
 app.listen(PORT, () => {

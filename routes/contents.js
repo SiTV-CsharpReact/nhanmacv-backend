@@ -369,8 +369,8 @@ router.get("/:id", async (req, res) => {
  */
 router.get("/alias/:alias", async (req, res) => {
   try {
+    console.log(req);
     const alias = req.params.alias;
-    console.log(alias);
     if (!alias) {
       return res.status(400).json({ error: "Alias is required" });
     }
@@ -378,7 +378,7 @@ router.get("/alias/:alias", async (req, res) => {
     const [results] = await db
       .promise()
       .query(
-        "SELECT id, title, introtext, metakey, created, created_by FROM jos_content WHERE alias = ? LIMIT 1",
+        "SELECT id, title, introtext, metakey,metadesc, created, created_by FROM jos_content WHERE alias = ? LIMIT 1",
         [alias]
       );
 

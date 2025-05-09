@@ -72,7 +72,7 @@ router.put("/edit/:id", async (req, res) => {
     const id = req.params.id;
     const { title, alias, image_desc, urls } = req.body;
   
-    if (!title || !alias) {
+    if (!title) {
       return error(res, "Thiếu dữ liệu bắt buộc: title hoặc alias", 400);
     }
   
@@ -80,13 +80,12 @@ router.put("/edit/:id", async (req, res) => {
       const sql = `
         UPDATE jos_slide SET
           title = ?,
-          alias = ?,
           image_desc = ?,
           urls = ?
         WHERE id = ?
       `;
   
-      const params = [title, alias, image_desc || '', urls || '', id];
+      const params = [title, image_desc || '', urls || '', id];
   
       const [result] = await db.promise().query(sql, params);
   

@@ -87,7 +87,6 @@ const upload = multer({
  *                   example: Lỗi khi xử lý file
  */
 router.post('/image', upload.single('file'), (req, res) => {
-    console.log(req);
     try {
         if (!req.file) {
             return error(res, 'Không tìm thấy file ảnh', 400);

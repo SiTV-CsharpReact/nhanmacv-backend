@@ -35,7 +35,7 @@ const { success, error } = require("../utils/utils");
 
 // Hàm build điều kiện WHERE và params tương ứng
 // Hàm build điều kiện WHERE và params
-function buildWhereClause({ startTime, endTime, state, alias, keyword }) {
+function buildWhereClause({ startTime, endTime, state, sectionid, keyword }) {
   const conditions = [];
   const params = [];
 
@@ -64,9 +64,9 @@ function buildWhereClause({ startTime, endTime, state, alias, keyword }) {
     params.push(Number(state));
   }
 
-  if (alias) {
-    conditions.push("alias = ?");
-    params.push(alias);
+  if (sectionid) {
+    conditions.push("sectionid = ?");
+    params.push(sectionid);
   }
 
   if (keyword) {
@@ -90,7 +90,6 @@ function buildWhereClause({ startTime, endTime, state, alias, keyword }) {
 
 router.get("/", async (req, res) => {
   try {
-    console.log(req.query);
     let page = parseInt(req.query.page, 10);
     let pageSize = parseInt(req.query.pageSize, 10);
     if (isNaN(page) || page < 1) page = 1;
@@ -98,12 +97,11 @@ router.get("/", async (req, res) => {
 
     const offset = (page - 1) * pageSize;
 
-    // Lấy filter từ query
     const filters = {
       startTime: req.query.startTime,
       endTime: req.query.endTime,
       state: req.query.state,
-      alias: req.query.alias,
+      sectionid: req.query.sectionid,
       keyword: req.query.keyword,
     };
 
@@ -115,7 +113,7 @@ router.get("/", async (req, res) => {
 
     // Truy vấn dữ liệu với filter và phân trang
     const sql = `
-      SELECT id, state, title, introtext, metakey, created, created_by, alias
+      SELECT id, state, title, introtext, metakey,metadesc, created, created_by, alias
       FROM jos_content
       ${whereClause}
       ORDER BY created DESC
@@ -129,10 +127,11 @@ router.get("/", async (req, res) => {
     // Trả về response
     success(res, "Lấy danh sách bài viết thành công", {
       list: results,
-      total: total,
-      // pagination: { page, pageSize, total, totalPages }
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
     });
-    console.log(res);
   } catch (err) {
     error(res, "Internal server error");
   }
@@ -293,7 +292,6 @@ router.post("/", async (req, res) => {
     ];
 
     const [result] = await db.promise().query(sql, params);
-    console.log(result);
     success(res, "Thêm bài viết thành công", { id: result.insertId }, 200);
   } catch (err) {
     error(res, "Internal server error");
@@ -369,12 +367,11 @@ router.get("/:id", async (req, res) => {
  */
 router.get("/alias/:alias", async (req, res) => {
   try {
-    console.log(req);
     const alias = req.params.alias;
     if (!alias) {
       return res.status(400).json({ error: "Alias is required" });
     }
-
+   
     const [results] = await db
       .promise()
       .query(
@@ -385,12 +382,13 @@ router.get("/alias/:alias", async (req, res) => {
     if (results.length === 0) {
       return error(res, "Bài viết không tồn tại", 404);
     }
-
     success(res, "Lấy bài viết theo alias thành công", results[0]);
+   
   } catch (err) {
     error(res, "Internal server error");
   }
 });
+
 
 // API cập nhật bài viết theo ID
 router.put("/:id", async (req, res) => {
@@ -496,7 +494,6 @@ router.put("/:id", async (req, res) => {
     ];
 
     const [result] = await db.promise().query(sql, params);
-    console.log(result)
     if (result.affectedRows === 0) {
       return error(res, "Bài viết không tồn tại", 404);
     }
@@ -508,6 +505,50 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+
+/**
+ * @swagger
+ * /contents/{id}:
+ *   delete:
+ *     summary: Xóa bài viết theo ID
+ *     tags: [Content]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         description: ID bài viết cần xóa
+ *     responses:
+ *       200:
+ *         description: Xóa thành công
+ *       404:
+ *         description: Bài viết không tồn tại
+ *       500:
+ *         description: Lỗi server
+ */
+router.delete("/:id", async (req, res) => {
+  try {
+    const contentId = parseInt(req.params.id, 10);
+    if (isNaN(contentId)) {
+      return res.status(400).json({ error: "ID không hợp lệ" });
+    }
+
+    const [result] = await db
+      .promise()
+      .query("DELETE FROM jos_content WHERE id = ?", [contentId]);
+
+    if (result.affectedRows === 0) {
+      return error(res, "Bài viết không tồn tại", 404);
+    }
+
+    success(res, "Xóa bài viết thành công", null, 200);
+  } catch (err) {
+    console.error("Lỗi khi xóa bài viết:", err);
+    error(res, "Lỗi server nội bộ");
+  }
+});
 // Hàm helper lấy tổng số bài viết
 async function getTotalCount(db, filters) {
   const { whereClause, params } = buildWhereClause(filters);

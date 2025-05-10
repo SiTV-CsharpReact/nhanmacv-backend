@@ -105,31 +105,49 @@ router.post('/register', (req, res) => {
  *       500:
  *         description: Lỗi server
  */
-router.post('/login', (req, res) => {
+router.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
-    return error(res, 'Vui lòng nhập username và password', 400);
+    return res.status(400).json({ message: "Vui lòng nhập đầy đủ thông tin" });
   }
 
-  const hashedPassword = md5(password);
+  try {
+    const [users] = await db.promise().query(
+      "SELECT id, username, password, name, email, usertype FROM jos_users WHERE username = ?",
+      [username]
+    );
 
-  const query = `
-    SELECT id, name, username, email, usertype
-    FROM jos_users
-    WHERE username = ? AND password = ?
-    LIMIT 1
-  `;
-
-  db.query(query, [username, hashedPassword], (err, results) => {
-    if (err) return error(res, err.message);
-
-    if (results.length === 0) {
-      return error(res, 'Sai tên đăng nhập hoặc mật khẩu', 401);
+    if (users.length === 0) {
+      return res.status(401).json({ message: "Tài khoản không tồn tại" });
     }
 
-    success(res, 'Đăng nhập thành công', { user: results[0] });
-  });
+    const user = users[0];
+    const [storedHash, salt] = user.password.split(":");
+
+    const inputHash = md5(password + salt);
+
+    if (storedHash !== inputHash) {
+      return res.status(401).json({ message: "Sai mật khẩu" });
+    }
+
+    // ✅ Đăng nhập thành công
+    // Có thể sinh JWT ở đây nếu cần
+    return success(
+      res,
+    "Đăng nhập thành công",
+    {
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        email: user.email,
+        usertype: user.usertype,
+      },
+    );
+  } catch (err) {
+    console.error("Lỗi khi đăng nhập:", err);
+    return res.status(500).json({ message: "Lỗi server nội bộ" });
+  }
 });
 
 module.exports = router;

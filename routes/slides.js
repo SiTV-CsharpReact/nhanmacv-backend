@@ -81,11 +81,12 @@ router.put("/edit/:id", async (req, res) => {
         UPDATE jos_slide SET
           title = ?,
           image_desc = ?,
-          urls = ?
+          urls = ?,
+          alias =?
         WHERE id = ?
       `;
   
-      const params = [title, image_desc || '', urls || '', id];
+      const params = [title, image_desc || '', urls || '', alias,id];
   
       const [result] = await db.promise().query(sql, params);
   

@@ -318,33 +318,52 @@ router.post("/", async (req, res) => {
  *       500:
  *         description: Lỗi server
  */
-router.get("/:id", async (req, res) => {
+router.get("/:slug-:id.html", async (req, res) => {
   try {
-    const contentId = parseInt(req.params.id, 10);
+    const { slug, id } = req.params;
+    const contentId = parseInt(id, 10);
+
     if (isNaN(contentId)) {
       return res.status(400).json({ error: "ID không hợp lệ" });
     }
 
+    // Lấy bài viết theo id
     const [results] = await db.promise().query(
-      `SELECT id,title, alias, title_alias, introtext, state, sectionid, catid,
-                created, created_by, modified, modified_by, checked_out, checked_out_time,
-                publish_up, publish_down, images, urls, attribs, version, parentid,
-                ordering, metakey, metadesc, access, hits, metadata,image_desc
-         FROM jos_content WHERE id = ?`,
+      `SELECT c.id, c.title, c.alias, c.title_alias, c.introtext, c.state, c.sectionid, c.catid,
+      c.created, c.created_by, c.modified, c.modified_by, c.checked_out, c.checked_out_time,
+      c.publish_up, c.publish_down, c.images, c.urls, c.attribs, c.version, c.parentid,
+      c.ordering, c.metakey, c.metadesc, c.access, c.hits, c.metadata, c.image_desc,
+      cat.title AS category_title
+      FROM jos_content AS c
+      LEFT JOIN jos_categories AS cat ON cat.id = c.catid
+      WHERE c.id = ?`,
       [contentId]
     );
 
     if (results.length === 0) {
-      return error(res, "Bài viết không tồn tại", 404);
+      return res.status(404).json({ error: "Bài viết không tồn tại" });
     }
 
-    // Trả về kết quả
-    success(res, "Lấy chi tiết bài viết thành công", results[0]);
+    const article = results[0];
+
+    // Kiểm tra slug trong URL có giống alias (hoặc title_alias) trong DB không
+    // Giả sử bạn dùng alias làm slug chuẩn
+    if (article.alias !== slug) {
+      // Redirect về URL chuẩn
+      return res.redirect(301, `/products/${article.alias}-${article.id}.html`);
+    }
+
+    // Trả về kết quả (hoặc render trang)
+    return res.json({
+      message: "Lấy chi tiết bài viết thành công",
+      data: article,
+    });
   } catch (err) {
     console.error("Lỗi khi lấy bài viết theo ID:", err);
-    error(res, "Lỗi server nội bộ");
+    return res.status(500).json({ error: "Lỗi server nội bộ" });
   }
 });
+
 
 /**
  * @swagger

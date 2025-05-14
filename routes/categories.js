@@ -270,14 +270,79 @@ router.get('/posts-by-categories', async (req, res) => {
 
   
 // });
+// router.get("/:alias", async (req, res) => {
+//   const alias = req.params.alias;
+//   const page = parseInt(req.query.page) || 1;
+//   const pageSize = parseInt(req.query.pageSize) || 15;
+//   const offset = (page - 1) * pageSize;
+//   if (page < 1 || pageSize < 1) {
+//     return res.status(400).json({ message: "Tham số page và pageSize phải là số nguyên dương." });
+//   }
+//   const sql = `
+//     SELECT 
+//       c.id,
+//       c.title AS content_title,
+//       c.alias,
+//       c.urls,
+//       c.images,
+//       c.state,
+//       c.catid,
+//       cat.title AS category_title,
+//       cat.alias AS category_alias
+//     FROM 
+//       jos_content c
+//     LEFT JOIN 
+//       jos_categories cat ON c.catid = cat.id
+//     WHERE 
+//       cat.alias = ? AND c.state = 1
+//     ORDER BY 
+//       c.created DESC
+//     LIMIT ? OFFSET ?
+//   `;
+//   console.log(sql)
+//   const countSql = `
+//     SELECT COUNT(*) as total
+//     FROM jos_content c
+//     LEFT JOIN jos_categories cat ON c.catid = cat.id
+//     WHERE cat.alias = ? AND c.state = 1
+//   `;
+
+//   try {
+//     const [[{ total }]] = await db.promise().query(countSql, [alias]);
+//     const [results] = await db.promise().query(sql, [alias, pageSize, offset]);
+
+//     if (results.length === 0) {
+//       return res.status(404).json({ message: "Không có bài viết nào thuộc chuyên mục này." });
+//     }
+//     const totalPages = Math.ceil(total / pageSize);
+//     res.json({
+//       Code: 200,
+//       Message: "Lấy bài viết theo alias thành công",
+//       Data: {
+//         list: results,
+//         total,
+//         page,
+//         pageSize,
+//         totalPages,
+//         hasNextPage: page < totalPages,
+//         hasPrevPage: page > 1,
+//       },
+//     });
+//   } catch (err) {
+//     console.error("Lỗi lấy bài viết theo alias:", err);
+//     res.status(500).json({ message: "Lỗi server" });
+//   }
+// });
 router.get("/:alias", async (req, res) => {
   const alias = req.params.alias;
   const page = parseInt(req.query.page) || 1;
   const pageSize = parseInt(req.query.pageSize) || 15;
   const offset = (page - 1) * pageSize;
+
   if (page < 1 || pageSize < 1) {
     return res.status(400).json({ message: "Tham số page và pageSize phải là số nguyên dương." });
   }
+
   const sql = `
     SELECT 
       c.id,
@@ -285,6 +350,7 @@ router.get("/:alias", async (req, res) => {
       c.alias,
       c.urls,
       c.images,
+      c.introtext,
       c.state,
       c.catid,
       cat.title AS category_title,
@@ -299,7 +365,7 @@ router.get("/:alias", async (req, res) => {
       c.created DESC
     LIMIT ? OFFSET ?
   `;
-  console.log(sql)
+
   const countSql = `
     SELECT COUNT(*) as total
     FROM jos_content c
@@ -309,17 +375,38 @@ router.get("/:alias", async (req, res) => {
 
   try {
     const [[{ total }]] = await db.promise().query(countSql, [alias]);
-    const [results] = await db.promise().query(sql, [alias, pageSize, offset]);
-
-    if (results.length === 0) {
+    if (total === 0) {
       return res.status(404).json({ message: "Không có bài viết nào thuộc chuyên mục này." });
     }
+
+    const [results] = await db.promise().query(sql, [alias, pageSize, offset]);
+
+    // Hàm lấy ảnh đầu tiên trong introtext nếu images rỗng
+    const getFirstImageFromIntrotext = (introtext) => {
+      if (!introtext) return null;
+      const match = introtext.match(/<img[^>]+src="([^">]+)"/i);
+      return match ? match[1] : null;
+    };
+
+    // Xử lý ảnh cho từng bài viết
+    const processedResults = results.map(item => {
+      if (!item.urls || item.urls.trim() === '') {
+        const firstImage = getFirstImageFromIntrotext(item.introtext);
+        return {
+          ...item,
+          urls: firstImage || null,
+        };
+      }
+      return item;
+    });
+
     const totalPages = Math.ceil(total / pageSize);
+
     res.json({
       Code: 200,
       Message: "Lấy bài viết theo alias thành công",
       Data: {
-        list: results,
+        list: processedResults,
         total,
         page,
         pageSize,
@@ -333,7 +420,6 @@ router.get("/:alias", async (req, res) => {
     res.status(500).json({ message: "Lỗi server" });
   }
 });
-
 
 
 module.exports = router;

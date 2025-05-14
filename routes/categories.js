@@ -299,7 +299,7 @@ router.get("/:alias", async (req, res) => {
       c.created DESC
     LIMIT ? OFFSET ?
   `;
-
+  console.log(sql)
   const countSql = `
     SELECT COUNT(*) as total
     FROM jos_content c

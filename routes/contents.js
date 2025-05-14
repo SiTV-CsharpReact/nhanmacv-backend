@@ -222,7 +222,7 @@ router.post("/", async (req, res) => {
       access,
       hits,
       metadata,
-      image_desc
+      image_desc,
     } = req.body;
 
     if (
@@ -288,7 +288,7 @@ router.post("/", async (req, res) => {
       access || 0,
       hits || 0,
       metadata || "",
-      image_desc|| ""
+      image_desc || "",
     ];
 
     const [result] = await db.promise().query(sql, params);
@@ -318,53 +318,109 @@ router.post("/", async (req, res) => {
  *       500:
  *         description: Lỗi server
  */
+// router.get("/:slug-:id.html", async (req, res) => {
+//   try {
+//     const { slug, id } = req.params;
+//     console.log({ slug, id });
+//     const contentId = parseInt(id, 10);
+
+//     if (isNaN(contentId)) {
+//       return res.status(400).json({ error: "ID không hợp lệ" });
+//     }
+
+//     // Lấy bài viết theo id
+//     const [results] = await db.promise().query(
+//       `SELECT c.id, c.title, c.alias, c.title_alias, c.introtext, c.state, c.sectionid, c.catid,
+//       c.created, c.created_by, c.modified, c.modified_by, c.checked_out, c.checked_out_time,
+//       c.publish_up, c.publish_down, c.images, c.urls, c.attribs, c.version, c.parentid,
+//       c.ordering, c.metakey, c.metadesc, c.access, c.hits, c.metadata,
+//       cat.title AS category_title
+//       FROM jos_content AS c
+//       LEFT JOIN jos_categories AS cat ON cat.id = c.catid
+//       WHERE c.id = ?`,
+//       [contentId]
+//     );
+
+//     if (results.length === 0) {
+//       return res.status(404).json({ error: "Bài viết không tồn tại" });
+//     }
+
+//     const article = results[0];
+
+//     // Kiểm tra slug trong URL có giống alias (hoặc title_alias) trong DB không
+//     // Giả sử bạn dùng alias làm slug chuẩn
+//     if (article.alias !== slug) {
+
+//       // Trả về dữ liệu kèm URL chuẩn để FE xử lý
+//       return success(res, "Lấy danh sách bài viết thành công", {
+//     data: article,
+
+//     });
+//       // res.json({
+//       //   message: "URL không đúng, vui lòng điều hướng lại",
+//       //   correctUrl: `/products/${article.alias}-${article.id}.html`,
+//       //   data: article,
+//       // });
+//     }
+
+//     // Trả về kết quả (hoặc render trang)
+//     return res.json({
+//       message: "Lấy chi tiết bài viết thành công",
+//       data: article,
+//     });
+//   } catch (err) {
+//     console.error("Lỗi khi lấy bài viết theo ID:", err);
+//     return res.status(500).json({ error: "Lỗi server nội bộ" });
+//   }
+// });
 router.get("/:slug-:id.html", async (req, res) => {
   try {
     const { slug, id } = req.params;
     const contentId = parseInt(id, 10);
 
     if (isNaN(contentId)) {
-      return res.status(400).json({ error: "ID không hợp lệ" });
+      return res
+        .status(400)
+        .json({ Code: 400, Message: "ID không hợp lệ", Data: null });
     }
 
-    // Lấy bài viết theo id
     const [results] = await db.promise().query(
-      `SELECT c.id, c.title, c.alias, c.title_alias, c.introtext, c.state, c.sectionid, c.catid,
-      c.created, c.created_by, c.modified, c.modified_by, c.checked_out, c.checked_out_time,
-      c.publish_up, c.publish_down, c.images, c.urls, c.attribs, c.version, c.parentid,
-      c.ordering, c.metakey, c.metadesc, c.access, c.hits, c.metadata, c.image_desc,
-      cat.title AS category_title
-      FROM jos_content AS c
-      LEFT JOIN jos_categories AS cat ON cat.id = c.catid
-      WHERE c.id = ?`,
+      `SELECT 
+  c.id, c.title, c.alias, c.title_alias, c.introtext, c.state, c.sectionid, c.catid,
+  c.created, c.created_by, c.modified, c.modified_by, c.checked_out, c.checked_out_time,
+  c.publish_up, c.publish_down, c.images, c.urls, c.attribs, c.version, c.parentid,
+  c.ordering, c.metakey, c.metadesc, c.access, c.hits, c.metadata,
+  parent_cat.name AS parent_cat_name
+FROM jos_content AS c
+LEFT JOIN job_menus AS cat ON cat.link = CONCAT(c.alias, '-', c.id, '.html')
+LEFT JOIN job_menus AS parent_cat ON parent_cat.id = cat.parent
+WHERE c.id = ?`,
       [contentId]
     );
 
     if (results.length === 0) {
-      return res.status(404).json({ error: "Bài viết không tồn tại" });
+      return res
+        .status(404)
+        .json({ Code: 404, Message: "Bài viết không tồn tại", Data: null });
     }
 
     const article = results[0];
 
-    // Kiểm tra slug trong URL có giống alias (hoặc title_alias) trong DB không
-    // Giả sử bạn dùng alias làm slug chuẩn
     if (article.alias !== slug) {
-      // Redirect về URL chuẩn
-      return res.redirect(301, `/products/${article.alias}-${article.id}.html`);
+      return success(res, "URL không đúng, vui lòng điều hướng lại", {
+        correctUrl: `/${article.alias}-${article.id}.html`,
+        article,
+      });
     }
 
-    // Trả về kết quả (hoặc render trang)
-    return res.json({
-      message: "Lấy chi tiết bài viết thành công",
-      data: article,
-    });
+    return success(res, "Lấy chi tiết bài viết thành công", article);
   } catch (err) {
     console.error("Lỗi khi lấy bài viết theo ID:", err);
-    return res.status(500).json({ error: "Lỗi server nội bộ" });
+    return res
+      .status(500)
+      .json({ Code: 500, Message: "Lỗi server nội bộ", Data: null });
   }
 });
-
-
 /**
  * @swagger
  * /contents/alias/{alias}:
@@ -390,7 +446,7 @@ router.get("/alias/:alias", async (req, res) => {
     if (!alias) {
       return res.status(400).json({ error: "Alias is required" });
     }
-   
+
     const [results] = await db
       .promise()
       .query(
@@ -402,12 +458,10 @@ router.get("/alias/:alias", async (req, res) => {
       return error(res, "Bài viết không tồn tại", 404);
     }
     success(res, "Lấy bài viết theo alias thành công", results[0]);
-   
   } catch (err) {
     error(res, "Internal server error");
   }
 });
-
 
 // API cập nhật bài viết theo ID
 router.put("/:id", async (req, res) => {
@@ -508,8 +562,8 @@ router.put("/:id", async (req, res) => {
       access || 0,
       hits || 0,
       metadata || "",
-      image_desc|| "",
-      contentId
+      image_desc || "",
+      contentId,
     ];
 
     const [result] = await db.promise().query(sql, params);
@@ -523,7 +577,6 @@ router.put("/:id", async (req, res) => {
     error(res, "Lỗi server nội bộ");
   }
 });
-
 
 /**
  * @swagger

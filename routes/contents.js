@@ -463,6 +463,29 @@ router.get("/alias/:alias", async (req, res) => {
   }
 });
 
+router.get("/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    if (!id) {
+      return res.status(400).json({ error: "id is required" });
+    }
+
+    const [results] = await db
+      .promise()
+      .query(
+        "SELECT id, title, urls FROM jos_content WHERE id = ? LIMIT 1",
+        [id]
+      );
+
+    if (results.length === 0) {
+      return error(res, "Bài viết không tồn tại", 404);
+    }
+    success(res, "Lấy bài viết theo alias thành công", results[0]);
+  } catch (err) {
+    error(res, "Internal server error");
+  }
+});
+
 // API cập nhật bài viết theo ID
 router.put("/:id", async (req, res) => {
   try {

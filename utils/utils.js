@@ -17,8 +17,14 @@ const getCurrentDateTime = () => {
       Data: data,
     });
   }
+  const getFirstImageFromIntrotext = (introtext) => {
+    if (!introtext) return null;
+    const match = introtext.match(/<img[^>]+src="([^">]+)"/i);
+    return match ? match[1] : null;
+  };
   module.exports = {
     getCurrentDateTime,
     success,
     error,
+    getFirstImageFromIntrotext
   };

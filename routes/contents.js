@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const db = require("../db");
 const moment = require("moment");
-const { success, error } = require("../utils/utils");
+const { success, error,getFirstImageFromIntrotext } = require("../utils/utils");
 /**
  * @swagger
  * /contents:
@@ -463,6 +463,43 @@ router.get("/alias/:alias", async (req, res) => {
   }
 });
 
+router.get("/short/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    if (!id) {
+      return res.status(400).json({ error: "id is required" });
+    }
+
+    const [results] = await db
+      .promise()
+      .query(
+        "SELECT id, title, urls,introtext FROM jos_content WHERE id = ? LIMIT 1",
+        [id]
+      );
+
+    if (results.length === 0) {
+      return error(res, "Bài viết không tồn tại", 404);
+    }
+     // Xử lý ảnh cho từng bài viết, thêm trường introImageUrl
+     const processedResults = results.map(item => {
+      const introImageUrl = item.urls?.trim() || getFirstImageFromIntrotext(item.introtext);
+    
+      // Xoá introtext khỏi kết quả trả về
+      const { introtext, ...rest } = item;
+    
+      return {
+        ...rest,
+        urls: introImageUrl,
+      };
+    });
+
+    success(res, "Lấy bài viết theo alias thành công", processedResults[0]);
+  } catch (err) {
+    error(res, "Internal server error");
+  }
+});
+
+
 router.get("/:id", async (req, res) => {
   try {
     const id = req.params.id;
@@ -473,18 +510,24 @@ router.get("/:id", async (req, res) => {
     const [results] = await db
       .promise()
       .query(
-        "SELECT id, title, urls FROM jos_content WHERE id = ? LIMIT 1",
+        `SELECT c.*, cat.name AS category_name, cat.alias AS category_alias
+         FROM jos_content c
+         LEFT JOIN jos_categories cat ON c.catid = cat.id
+         WHERE c.id = ? LIMIT 1`,
         [id]
       );
 
     if (results.length === 0) {
       return error(res, "Bài viết không tồn tại", 404);
     }
-    success(res, "Lấy bài viết theo alias thành công", results[0]);
+
+    success(res, "Lấy bài viết theo id thành công", results[0]);
   } catch (err) {
+    console.error(err);
     error(res, "Internal server error");
   }
 });
+
 
 // API cập nhật bài viết theo ID
 router.put("/:id", async (req, res) => {

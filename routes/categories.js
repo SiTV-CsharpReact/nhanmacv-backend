@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { success, error, getCurrentDateTime } = require('../utils/utils');
+const { success, error, getCurrentDateTime,getFirstImageFromIntrotext } = require('../utils/utils');
 
 // GET all categories
 router.get('/', (req, res) => {
@@ -381,20 +381,13 @@ router.get("/:alias", async (req, res) => {
 
     const [results] = await db.promise().query(sql, [alias, pageSize, offset]);
 
-    // Hàm lấy ảnh đầu tiên trong introtext nếu images rỗng
-    const getFirstImageFromIntrotext = (introtext) => {
-      if (!introtext) return null;
-      const match = introtext.match(/<img[^>]+src="([^">]+)"/i);
-      return match ? match[1] : null;
-    };
-
     // Xử lý ảnh cho từng bài viết
     const processedResults = results.map(item => {
       if (!item.urls || item.urls.trim() === '') {
-        const firstImage = getFirstImageFromIntrotext(item.introtext);
+        const introImageUrl = item.urls || getFirstImageFromIntrotext(item.introtext);
         return {
           ...item,
-          urls: firstImage || null,
+          urls: introImageUrl || null,
         };
       }
       return item;

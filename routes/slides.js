@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { success, error } = require('../utils/utils');
+const { success, error,getFirstImageFromIntrotext } = require('../utils/utils');
 
 /**
  * @swagger
@@ -30,15 +30,9 @@ router.get("/", async (req, res) => {
 
     const [results] = await db.promise().query(sql);
 
-    const getFirstImageFromIntrotext = (introtext) => {
-      if (!introtext) return null;
-      const match = introtext.match(/<img[^>]+src="([^">]+)"/i);
-      return match ? match[1] : null;
-    };
-
     // Xử lý ảnh cho từng bài viết, thêm trường introImageUrl
     const processedResults = results.map(item => {
-      const introImageUrl = getFirstImageFromIntrotext(item.introtext);
+      const introImageUrl = item.urls || getFirstImageFromIntrotext(item.introtext);
       return {
         ...item,
         urls: introImageUrl,

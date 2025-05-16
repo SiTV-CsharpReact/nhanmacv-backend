@@ -96,18 +96,31 @@ router.put('/edit/:id', (req, res) => {
  */
 router.delete('/delete/:id', (req, res) => {
   const { id } = req.params;
-  const sql = `DELETE FROM job_menus WHERE id = ?`;
 
-  db.query(sql, [id], (err, result) => {
+  // Bước 1: Xóa tất cả menu con có parent là id
+  const deleteChildrenSql = `DELETE FROM job_menus WHERE parent = ?`;
+  db.query(deleteChildrenSql, [id], (err, result) => {
     if (err) {
-      console.error('Lỗi xóa menu:', err);
-      return error(res, 'Lỗi server khi xóa menu');
+      console.error('Lỗi khi xóa menu con:', err);
+      return error(res, 'Lỗi server khi xóa menu con');
     }
-    if (result.affectedRows === 0) {
-      return error(res, 'Không tìm thấy menu để xóa', 404);
-    }
-    success(res, 'Xóa menu thành công');
+
+    // Bước 2: Xóa menu cha
+    const deleteParentSql = `DELETE FROM job_menus WHERE id = ?`;
+    db.query(deleteParentSql, [id], (err, result) => {
+      if (err) {
+        console.error('Lỗi khi xóa menu cha:', err);
+        return error(res, 'Lỗi server khi xóa menu cha');
+      }
+
+      if (result.affectedRows === 0) {
+        return error(res, 'Không tìm thấy menu để xóa', 404);
+      }
+
+      return success(res, 'Xóa menu và tất cả menu con thành công');
+    });
   });
 });
+
 
 module.exports = router;

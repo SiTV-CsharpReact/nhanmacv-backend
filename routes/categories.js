@@ -95,21 +95,22 @@ router.get('/detail/:id', (req, res) => {
 // POST category
 router.post('/', (req, res) => {
   const { title, alias, section, published } = req.body;
-  const description = "";
-  const params = "";
   const checked_out_time = getCurrentDateTime();
+  const image="";
+   const description = "";
+  const params = "";
   section !==0?
   db.query(
-    'INSERT INTO jos_categories (title, alias, section, published, description, checked_out_time, params) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    [title, alias, section, published, description, checked_out_time, params],
+    'INSERT INTO jos_categories (title, alias, section, published, description, checked_out_time, params,) VALUES (?, ?, ?, ?, ?,?,?)',
+    [title, alias, section, published,description, checked_out_time,params],
     (err, result) => {
       if (err) return error(res, err.message);
       success(res, "Thêm chuyên mục con thành công", { id: result.insertId, ...req.body }, 200);
     }
   ):
   db.query(
-    'INSERT INTO jos_sections (title, alias, published, checked_out_time, params) VALUES (?, ?, ?, ?, ?)',
-    [title, alias, published, checked_out_time, params],
+    'INSERT INTO jos_sections (title, alias, published, checked_out_time,description,image,params) VALUES (?, ?, ?, ?,?,?,?)',
+    [title, alias, published, checked_out_time,description,image,params],
     (err, result) => {
       if (err) return error(res, err.message);
       success(res, "Thêm chuyên mục cha thành công", { id: result.insertId, ...req.body }, 200);

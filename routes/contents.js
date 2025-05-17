@@ -385,15 +385,44 @@ router.get("/:slug-:id.html", async (req, res) => {
     }
 
     const [results] = await db.promise().query(
-      `SELECT 
-  c.id, c.title, c.alias, c.title_alias, c.introtext, c.state, c.sectionid, c.catid,
-  c.created, c.created_by, c.modified, c.modified_by, c.checked_out, c.checked_out_time,
-  c.publish_up, c.publish_down, c.images, c.urls, c.attribs, c.version, c.parentid,
-  c.ordering, c.metakey, c.metadesc, c.access, c.hits, c.metadata,
-  parent_cat.name AS parent_cat_name
+    //   `SELECT 
+    //   c.id, c.title, c.alias, c.title_alias, c.introtext, c.state, c.sectionid, c.catid,
+    //   c.created, c.created_by, c.modified, c.modified_by, c.checked_out, c.checked_out_time,
+    //   c.publish_up, c.publish_down, c.images, c.urls, c.attribs, c.version, c.parentid,
+    //   c.ordering, c.metakey, c.metadesc, c.access, c.hits, c.metadata,
+      
+    //   CASE 
+    //     WHEN cat.parent != 0 THEN parent_cat.name
+    //     ELSE cat.name
+    //   END AS parent_cat_name
+    
+    // FROM jos_content AS c
+    
+    // LEFT JOIN job_menus AS cat 
+    // ON cat.link LIKE CONCAT('%', c.alias, '%')
+    
+    // LEFT JOIN job_menus AS parent_cat 
+    //   ON parent_cat.id = cat.parent
+    //   WHERE c.id =?`,
+    `SELECT 
+    c.id, c.title, c.alias, c.title_alias, c.introtext, c.state, c.sectionid, c.catid,
+    c.created, c.created_by, c.modified, c.modified_by, c.checked_out, c.checked_out_time,
+    c.publish_up, c.publish_down, c.images, c.urls, c.attribs, c.version, c.parentid,
+    c.ordering, c.metakey, c.metadesc, c.access, c.hits, c.metadata,
+
+    CASE
+      WHEN cat.parent_id != 0 THEN parent_cat.title
+      ELSE cat.title
+    END AS parent_cat_name
+
 FROM jos_content AS c
-LEFT JOIN job_menus AS cat ON cat.link = CONCAT(c.alias, '-', c.id, '.html')
-LEFT JOIN job_menus AS parent_cat ON parent_cat.id = cat.parent
+
+LEFT JOIN jos_categories AS cat 
+  ON cat.id = c.catid
+
+LEFT JOIN jos_categories AS parent_cat 
+  ON parent_cat.id = cat.parent_id
+
 WHERE c.id = ?`,
       [contentId]
     );

@@ -288,7 +288,7 @@ router.post("/", async (req, res) => {
       access || 0,
       hits || 0,
       metadata || "",
-      image_desc || "",
+      image_desc || title || "",
     ];
 
     const [result] = await db.promise().query(sql, params);
